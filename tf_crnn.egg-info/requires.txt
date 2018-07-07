@@ -1,0 +1,7 @@
+tensorflow-gpu
+imageio
+tqdm
+sacred
+tensorflow-tensorboard
+better_exceptions
+opencv-python
