@@ -178,41 +178,41 @@ def padding_inputs_width(image: tf.Tensor, target_shape: Tuple[int, int], increm
     return pad_image, new_w  # new_w = image width used for computing sequence lengths
 
 
-# def preprocess_image_for_prediction(fixed_height: int=32, min_width: int=8):
-#     """
-#     Input function to use when exporting the model for making predictions (see estimator.export_savedmodel)
-#     :param fixed_height: height of the input image after resizing
-#     :param min_width: minimum width of image after resizing
-#     :return:
-#     """
+def preprocess_image_for_prediction(fixed_height: int=32, min_width: int=8):
+    """     
+    Input function to use when exporting the model for making predictions (see estimator.export_savedmodel)
+    :param fixed_height: height of the input image after resizing
+    :param min_width: minimum width of image after resizing
+    :return:"""
+    
+
+    def serving_input_fn():
+        # define placeholder for input image
+        image = tf.placeholder(dtype=tf.float32, shape=[None, None, 1])
+
+        shape = tf.shape(image)
+        # Assert shape is h x w x c with c = 1
 #
-#     def serving_input_fn():
-#         # define placeholder for input image
-#         image = tf.placeholder(dtype=tf.float32, shape=[None, None, 1])
+        ratio = tf.divide(shape[1], shape[0])
+        increment = CONST.DIMENSION_REDUCTION_W_POOLING
+        new_width = tf.cast(tf.round((ratio * fixed_height) / increment) * increment, tf.int32)
 #
-#         shape = tf.shape(image)
-#         # Assert shape is h x w x c with c = 1
+        resized_image = tf.cond(new_width < tf.constant(min_width, dtype=tf.int32),
+                                true_fn=lambda: tf.image.resize_images(image, size=(fixed_height, min_width)),
+                                false_fn=lambda: tf.image.resize_images(image, size=(fixed_height, new_width))
+                                )
 #
-#         ratio = tf.divide(shape[1], shape[0])
-#         increment = CONST.DIMENSION_REDUCTION_W_POOLING
-#         new_width = tf.cast(tf.round((ratio * fixed_height) / increment) * increment, tf.int32)
+        # Features to serve
+        features = {'images': resized_image[None],  # cast to 1 x h x w x c
+                    'images_widths': new_width[None]  # cast to tensor
+                    }
 #
-#         resized_image = tf.cond(new_width < tf.constant(min_width, dtype=tf.int32),
-#                                 true_fn=lambda: tf.image.resize_images(image, size=(fixed_height, min_width)),
-#                                 false_fn=lambda: tf.image.resize_images(image, size=(fixed_height, new_width))
-#                                 )
+        # Inputs received
+        receiver_inputs = {'images': image}
 #
-#         # Features to serve
-#         features = {'images': resized_image[None],  # cast to 1 x h x w x c
-#                     'images_widths': new_width[None]  # cast to tensor
-#                     }
+        return tf.estimator.export.ServingInputReceiver(features, receiver_inputs)
 #
-#         # Inputs received
-#         receiver_inputs = {'images': image}
-#
-#         return tf.estimator.export.ServingInputReceiver(features, receiver_inputs)
-#
-#     return serving_input_fn
+    return serving_input_fn
 
 
 def data_loader(csv_filename: Union[List[str], str], params: Params, labels=True, batch_size: int=64,
@@ -304,12 +304,13 @@ def data_loader(csv_filename: Union[List[str], str], params: Params, labels=True
     return input_fn
 
 
-def serving_single_input(fixed_height: int=32, min_width: int=8):
+def serving_single_input(file, fixed_height: int=32, min_width: int=8):
 
     def serving_input_fn():
 
         # define placeholder for filename
         filename = tf.placeholder(dtype=tf.string)
+        filename = file
         decoded_image = tf.to_float(tf.image.decode_jpeg(tf.read_file(filename), channels=3,
                                                          try_recover_truncated=True))
 
@@ -337,15 +338,14 @@ def serving_single_input(fixed_height: int=32, min_width: int=8):
         # Inputs received
         receiver_inputs = {'images': image}
         alternative_receivers = {'input_filename': {'filename': filename}, 'input_rgb': {'rgb_images': decoded_image}}
-
-        return tf.estimator.export.ServingInputReceiver(features, receiver_tensors=receiver_inputs,
-                                                        receiver_tensors_alternatives=alternative_receivers)
-
+        print(features)
+        return features
+    print(serving_input_fn)
     return serving_input_fn
 
 
 # TODO serving function for batches
-def serving_batch_filenames_fn(input_shape=(32, 100), n_channels: int=1, padding=True):
+def serving_batch_filenames_fn(input_shape=(32, 100), n_channels: int=3, padding=True):
     """
     Serving input function for batch inference using filenames as inputs
     :param input_shape: shape of the input after resizing/padding
@@ -411,3 +411,5 @@ def serving_batch_filenames_fn(input_shape=(32, 100), n_channels: int=1, padding
 
 
 # TODO serving function from url...
+data = serving_single_input("/0/img0.png")
+print(data)

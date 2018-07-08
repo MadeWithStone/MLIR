@@ -50,9 +50,10 @@ class PredictionModel:
     def predict(self, input_to_predict: Union[np.ndarray, str]) -> dict:
         output = self._output_dict
         input_tensor = self._input_tensor
+        print(input_tensor)
         return self.session.run(output, feed_dict={input_tensor: input_to_predict})
 
-
+"""
 class PredictionModelBatch:
 
     def __init__(self, model_dir: str, session: tf.Session = None, signature: str=DEFAULT_SERVING_SIGNATURE_DEF_KEY):
@@ -78,16 +79,17 @@ class PredictionModelBatch:
 
         # Get init op for dataset
         g = tf.get_default_graph()
-        self._init_op = g.get_operation_by_name('dataset_init')
+        
+        self._init_op = g.get_operation_by_name('init')
 
     def predict(self, input_to_predict: List[str], batch_size: int=128) -> dict:
         # First run init op, then prediction
+        print(self._input_dict)
         _, predictions = self.session.run([self._init_op, self._output_dict],
-                                          feed_dict={self._input_dict['list_filenames']: input_to_predict,
-                                                     self._input_dict['batch_size']: batch_size})
+                                          feed_dict={self._input_dict['images']: input_to_predict)
 
         return predictions
-
+"""
 
 def _signature_def_to_tensors(signature_def):  # from SeguinBe
     g = tf.get_default_graph()
