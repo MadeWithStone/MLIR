@@ -1,20 +1,13 @@
-import tensorflow as tf 
-import numpy
-import PIL
+import tensorflow as tf
 from tf_crnn.loader import PredictionModel
-from tf_crnn.data_handler import serving_single_input
+from scipy.misc import imread
 
-sess = tf.Session()
-data = serving_single_input("0/img0.png")
-print(data)
-image_content = "0/img0.png"
-image = tf.rgb2gray(
-    tf.image.is_jpeg(image_content),
-    lambda: tf.image.decode_jpeg(image_content, channels=1, name='image_decoding_op',
-                                    try_recover_truncated=True),
-    lambda: tf.image.decode_png(image_content, channels=1, name='image_decoding_op'))
+model_dir = '/output/export/1530744466/'
+image = imread('/Users/maxwellstone/Downloads/IMG_6577 2.JPG', mode='L')[: ,:, None]
 
-# Data augmentation
-
-predictImage = PredictionModel("/output/export/1530744466/", sess)
-predictImage.predict(image)
+with tf.Session() as sess:
+    model = PredictionModel(model_dir)
+    predictions = model.predict(image)
+    transcription = predictions['words']
+    score = predictions['score']
+    print(transcription,score)
