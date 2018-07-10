@@ -11,11 +11,11 @@ setup(name='tf_crnn',
       url='https://github.com/solivr/tf-crnn',
       description='TensorFlow Convolutional Recurrent Neural Network (CRNN)',
       install_requires=[
-            'tensorflow-gpu',
+            'tensorflow',
             'imageio',
             'tqdm',
             'sacred',
-            'tensorflow-tensorboard',
+            'tb-nightly',
             'better_exceptions',
             'opencv-python'
       ],
